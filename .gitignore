@@ -1,0 +1,9 @@
+# For Backend
+/backend/node_modules/
+/backend/.env
+/backend/dist/
+
+# For Frontend
+/frontend/emailbuilder/node_modules/
+/frontend/emailbuilder/build/
+/frontend/emailbuilder/.env
