@@ -18,6 +18,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 
+
+app.get('/hi', (req, res) => {
+  res.json({ message: 'Hello from the backend!' });
+});
+
 app.use('/api', emailRoutes);
 
 
