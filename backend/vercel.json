@@ -8,7 +8,35 @@
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
+      "src": "/uploads/(.*)",
+      "dest": "/uploads/$1"
+    },
+    {
+      "src": "/api/getEmailLayout",
+      "dest": "server.js"
+    },
+    {
+      "src": "/api/email/(.*)",
+      "dest": "server.js"
+    },
+    {
+      "src": "/api/uploadImage",
+      "dest": "server.js"
+    },
+    {
+      "src": "/api/uploadEmailConfig",
+      "dest": "server.js"
+    },
+    {
+      "src": "/api/renderAndDownloadTemplate/(.*)",
+      "dest": "server.js"
+    },
+    {
+      "src": "/hi",
+      "dest": "server.js"
+    },
+    {
+      "src": "/(.*)",
       "dest": "server.js"
     }
   ]
