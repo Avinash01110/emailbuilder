@@ -3,7 +3,6 @@ import {
   Upload,
   Save,
   Download,
-  Type,
   Image as ImageIcon,
   AlignLeft,
   AlignCenter,
@@ -14,16 +13,17 @@ import {
   GripVertical,
   Plus,
   X,
-  Settings,
   Eye,
 } from "lucide-react";
+import { emailService } from "../services/api";
+import { TailSpin } from "react-loader-spinner";
+import { toast } from 'react-toastify';
 
 const EmailBuilder = () => {
+  const id = process.env.REACT_APP_EMAIL_BUILDER_ID;
+
   const [layout, setLayout] = useState("");
-  const [sections, setSections] = useState([
-    { id: 1, type: "text", content: "", styles: {} },
-    { id: 2, type: "image", content: "", styles: {} },
-  ]);
+  const [sections, setSections] = useState([]);
   const [emailConfig, setEmailConfig] = useState({
     title: "",
     content: "",
@@ -39,58 +39,154 @@ const EmailBuilder = () => {
     textDecoration: "none",
     lineHeight: "1.5",
   });
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState({loading: false, uploadingImage :false});
   const [isDragging, setIsDragging] = useState(false);
   const [draggedSection, setDraggedSection] = useState(null);
   const [showPreview, setShowPreview] = useState(true);
+  const [savedTemplateId, setSavedTemplateId] = useState(null);
+
+  // Fetch existing template data if ID is provided
+  useEffect(() => {
+    const fetchTemplateData = async () => {
+      if (id) {
+        setLoading({loading:true});
+        try {
+          const response = await emailService.getEmailId(id);
+          const templateData = response.data;
+
+          // Set email config
+          setEmailConfig({
+            title: templateData.title,
+            content: templateData.content,
+            images: templateData.images || [],
+          });
+
+          // Set style config
+          if (templateData.styles) {
+            setStyleConfig(templateData.styles);
+          }
+
+          // Transform content into sections
+          const contentSections = templateData.content.map((item, index) => ({
+            id: Date.now() + index,
+            type: item.type,
+            content: item.content,
+            styles: item.styles || styleConfig,
+          }));
+
+          setSections(contentSections);
+          setSavedTemplateId(id);
+        } catch (error) {
+          console.error("Error loading template:", error);
+        }
+        setLoading({loading:false});
+      }
+    };
+
+    fetchTemplateData();
+  }, [id]);
+
+  // Initialize with empty sections if no template is loaded
+  useEffect(() => {
+    if (!id && sections.length === 0) {
+      setSections([
+        { id: 1, type: "text", content: "", styles: { ...styleConfig } },
+        { id: 2, type: "image", content: "", styles: { ...styleConfig } },
+      ]);
+    }
+  }, [id]);
 
   useEffect(() => {
     fetchEmailLayout();
   }, []);
 
   const fetchEmailLayout = async () => {
-    setLoading(true);
+    setLoading({loading:true});
     try {
-      const response = await new Promise((resolve) =>
-        setTimeout(
-          () =>
-            resolve({
-              layout: '<div class="email-template">Sample Template</div>',
-            }),
-          1000
-        )
-      );
+      const response = await emailService.getEmailLayout();
       setLayout(response.layout);
     } catch (error) {
       console.error("Error fetching layout:", error);
     }
-    setLoading(false);
+    setLoading({loading:false});
   };
 
-  const handleImageUpload = async (sectionId, e) => {
+  const handleImageUpload = async (sectionId, e) => {    
+    setLoading({uploadingImage:true});
     const file = e.target.files[0];
     if (!file) return;
-
+    
     try {
-      // Create a preview URL for the uploaded image
-      const imageUrl = URL.createObjectURL(file);
-
-      // Update the specific section with the image
+      const uploadResult = await emailService.uploadImage(file);
       setSections(
         sections.map((section) =>
-          section.id === sectionId ? { ...section, content: imageUrl } : section
+          section.id === sectionId
+            ? { ...section, content: uploadResult.url }
+            : section
         )
       );
-
-      // In a real application, you would also upload to server:
-      // const formData = new FormData();
-      // formData.append('image', file);
-      // await fetch('/uploadImage', {
-      //   method: 'POST',
-      //   body: formData
-      // });
+      setEmailConfig((prev) => ({
+        ...prev,
+        images: [...prev.images, uploadResult.url],
+      }));
     } catch (error) {
       console.error("Error uploading image:", error);
+    }finally{
+      setLoading({uploadingImage:false});
+    }
+  };
+
+  const handleSaveTemplate = async () => {
+    try {
+      setLoading({loading:true});
+      const config = {
+        title: emailConfig.title,
+        content: sections.map((section) => ({
+          type: section.type,
+          content: section.content,
+          styles: section.styles,
+        })),
+        images: sections
+          .filter((section) => section.type === "image" && section.content)
+          .map((section) => section.content),
+        styles: styleConfig,
+      };
+
+      if (savedTemplateId) {
+        // Update existing template
+        await emailService.updateEmailId(savedTemplateId, config);
+      } else {
+        // Create new template
+        const response = await emailService.saveEmailConfig(config);
+        setSavedTemplateId(response.id);
+      }
+
+      toast.success("Template saved successfully!");
+    } catch (error) {
+      console.error("Error saving template:", error);
+      toast.error("Failed to save template");
+    } finally {
+      setLoading({loading:false});
+    }
+  };
+
+  const handleDownloadTemplate = async () => {
+    if (!savedTemplateId) {
+      alert("Please save the template first");
+      return;
+    }
+
+    await handleSaveTemplate();
+
+    try {
+      setLoading({loading:true});
+      await emailService.downloadTemplate(savedTemplateId);
+      toast.success("Template downloaded successfully!");
+    } catch (error) {
+      console.error("Error downloading template:", error);
+      toast.error("Failed to download template");
+    } finally {
+      setLoading({loading:false});
     }
   };
 
@@ -154,7 +250,7 @@ const EmailBuilder = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Modern Header */}
-      <header className="bg-white border-b">
+      <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold text-gray-900">Email Builder</h1>
@@ -166,20 +262,26 @@ const EmailBuilder = () => {
               >
                 <Eye className="w-5 h-5 text-gray-600" />
               </button>
-              <button
-                onClick={() => {}}
-                className="p-2 rounded-lg hover:bg-gray-100"
-                title="Settings"
-              >
-                <Settings className="w-5 h-5 text-gray-600" />
-              </button>
             </div>
           </div>
+
+          {/* Add Title Input */}
+          <div className="mt-4">
+            <input
+              type="text"
+              placeholder="Enter template title"
+              value={emailConfig.title}
+              onChange={(e) =>
+                setEmailConfig((prev) => ({ ...prev, title: e.target.value }))
+              }
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
         </div>
-      </header>
+      </div>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-6">
+      <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Left Panel - Enhanced Editor */}
           <div
@@ -458,23 +560,27 @@ const EmailBuilder = () => {
           {showPreview && (
             <div className="w-full lg:w-1/2">
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Preview</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                  Preview
+                </h2>
                 <div className="border rounded-lg p-6 min-h-[600px] bg-white">
-                  {sections.map(section => (
-                    <div 
-                      key={section.id} 
+                  {sections.map((section) => (
+                    <div
+                      key={section.id}
                       style={{
                         ...section.styles,
-                        marginBottom: '1rem'
+                        marginBottom: "1rem",
                       }}
                     >
-                      {section.type === 'text' ? (
-                        <div>{section.content || 'Add your content here...'}</div>
+                      {section.type === "text" ? (
+                        <div>
+                          {section.content || "Add your content here..."}
+                        </div>
                       ) : (
                         section.content && (
-                          <img 
-                            src={section.content} 
-                            alt="" 
+                          <img
+                            src={section.content}
+                            alt=""
                             className="max-w-full h-auto rounded-lg"
                           />
                         )
@@ -490,28 +596,50 @@ const EmailBuilder = () => {
         {/* Action Buttons */}
         <div className="fixed bottom-6 right-6 flex space-x-3">
           <button
-            onClick={() => {}}
+            onClick={() => setShowPreview(!showPreview)}
             className="inline-flex items-center px-4 py-2 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 text-sm font-medium text-gray-700"
+            disabled={loading.loading || loading.uploadingImage}
           >
             <Eye className="w-4 h-4 mr-2" />
             Preview
           </button>
           <button
-            onClick={() => {}}
+            onClick={handleSaveTemplate}
             className="inline-flex items-center px-4 py-2 bg-blue-600 rounded-lg shadow-sm hover:bg-blue-700 text-sm font-medium text-white"
+            disabled={loading.loading || loading.uploadingImage}
           >
             <Save className="w-4 h-4 mr-2" />
             Save Template
           </button>
           <button
-            onClick={() => {}}
+            onClick={handleDownloadTemplate}
             className="inline-flex items-center px-4 py-2 bg-green-600 rounded-lg shadow-sm hover:bg-green-700 text-sm font-medium text-white"
+            // disabled={loading || !savedTemplateId}
           >
             <Download className="w-4 h-4 mr-2" />
             Download
           </button>
         </div>
-      </main>
+
+        {/* Loading Indicator */}
+        {(loading.loading || loading.uploadingImage) && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+            <div className="flex flex-row gap-2 items-center justify-center bg-white p-4 rounded-lg">
+              <TailSpin
+                visible={true}
+                height="20"
+                width="20"
+                color="#2563eb"
+                ariaLabel="tail-spin-loading"
+                radius="1"
+                wrapperStyle={{}}
+                wrapperClass=""
+              />
+              <p>{loading.loading ? "Loading..." : "Image Uploading..."}</p>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
