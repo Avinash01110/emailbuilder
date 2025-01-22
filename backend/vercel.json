@@ -9,34 +9,46 @@
   "routes": [
     {
       "src": "/uploads/(.*)",
-      "dest": "/uploads/$1"
-    },
-    {
-      "src": "/api/getEmailLayout",
-      "dest": "server.js"
-    },
-    {
-      "src": "/api/email/(.*)",
-      "dest": "server.js"
+      "dest": "/uploads/$1",
+      "headers": {
+        "cache-control": "public, max-age=31536000, immutable"
+      }
     },
     {
       "src": "/api/uploadImage",
-      "dest": "server.js"
+      "dest": "server.js",
+      "methods": ["POST"]
     },
     {
       "src": "/api/uploadEmailConfig",
-      "dest": "server.js"
+      "dest": "server.js",
+      "methods": ["POST"]
+    },
+    {
+      "src": "/api/email/(.*)",
+      "dest": "server.js",
+      "methods": ["GET", "PUT"]
+    },
+    {
+      "src": "/api/getEmailLayout",
+      "dest": "server.js",
+      "methods": ["GET"]
     },
     {
       "src": "/api/renderAndDownloadTemplate/(.*)",
-      "dest": "server.js"
+      "dest": "server.js",
+      "methods": ["GET"]
     },
     {
-      "src": "/hi",
+      "src": "/api/(.*)",
       "dest": "server.js"
     },
     {
       "src": "/(.*)",
+      "dest": "server.js"
+    },
+    {
+      "src": "/hi",
       "dest": "server.js"
     }
   ]
