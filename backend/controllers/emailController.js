@@ -32,12 +32,10 @@ const emailController = {
         return res.status(404).json({ error: "Email template not found" });
       }
 
-      res
-        .status(200)
-        .json({
-          message: "Email template fetched successfully",
-          data: emailTemplate,
-        });
+      res.status(200).json({
+        message: "Email template fetched successfully",
+        data: emailTemplate,
+      });
     } catch (error) {
       console.error("Error fetching email template:", error.message);
       res.status(500).json({ error: "Error fetching email template" });
@@ -115,8 +113,6 @@ const emailController = {
         );
         uploadStream.end(req.file.buffer);
       });
-
-      await fs.unlink(req.file.path);
 
       res.json({
         url: result.secure_url,
