@@ -105,11 +105,6 @@ const emailController = {
         return res.status(400).json({ error: "No image provided" });
       }
 
-      // const result = await cloudinary.uploader.upload(req.file.path, {
-      //   folder: 'email-builder'
-      // });
-
-      // Upload file buffer to Cloudinary
       const result = await new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
           { folder: "email-builder" },
@@ -118,7 +113,7 @@ const emailController = {
             else resolve(result);
           }
         );
-        uploadStream.end(req.file.buffer); // Pass buffer to the upload stream
+        uploadStream.end(req.file.buffer);
       });
 
       await fs.unlink(req.file.path);
