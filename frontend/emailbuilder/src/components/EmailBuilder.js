@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { emailService } from "../services/api";
 import { TailSpin } from "react-loader-spinner";
-import { toast } from 'react-toastify';
+import { toast } from "react-toastify";
 
 const EmailBuilder = () => {
   const id = process.env.REACT_APP_EMAIL_BUILDER_ID;
@@ -39,34 +39,33 @@ const EmailBuilder = () => {
     textDecoration: "none",
     lineHeight: "1.5",
   });
-  const [loading, setLoading] = useState({loading: false, uploadingImage :false});
+  const [loading, setLoading] = useState({
+    loading: false,
+    uploadingImage: false,
+  });
   const [isDragging, setIsDragging] = useState(false);
   const [draggedSection, setDraggedSection] = useState(null);
   const [showPreview, setShowPreview] = useState(true);
   const [savedTemplateId, setSavedTemplateId] = useState(null);
 
-  // Fetch existing template data if ID is provided
   useEffect(() => {
     const fetchTemplateData = async () => {
       if (id) {
-        setLoading({loading:true});
+        setLoading({ loading: true });
         try {
           const response = await emailService.getEmailId(id);
           const templateData = response.data;
 
-          // Set email config
           setEmailConfig({
             title: templateData.title,
             content: templateData.content,
             images: templateData.images || [],
           });
 
-          // Set style config
           if (templateData.styles) {
             setStyleConfig(templateData.styles);
           }
 
-          // Transform content into sections
           const contentSections = templateData.content.map((item, index) => ({
             id: Date.now() + index,
             type: item.type,
@@ -79,14 +78,13 @@ const EmailBuilder = () => {
         } catch (error) {
           console.error("Error loading template:", error);
         }
-        setLoading({loading:false});
+        setLoading({ loading: false });
       }
     };
 
     fetchTemplateData();
   }, [id]);
 
-  // Initialize with empty sections if no template is loaded
   useEffect(() => {
     if (!id && sections.length === 0) {
       setSections([
@@ -101,21 +99,21 @@ const EmailBuilder = () => {
   }, []);
 
   const fetchEmailLayout = async () => {
-    setLoading({loading:true});
+    setLoading({ loading: true });
     try {
       const response = await emailService.getEmailLayout();
       setLayout(response.layout);
     } catch (error) {
       console.error("Error fetching layout:", error);
     }
-    setLoading({loading:false});
+    setLoading({ loading: false });
   };
 
-  const handleImageUpload = async (sectionId, e) => {    
-    setLoading({uploadingImage:true});
+  const handleImageUpload = async (sectionId, e) => {
+    setLoading({ uploadingImage: true });
     const file = e.target.files[0];
     if (!file) return;
-    
+
     try {
       const uploadResult = await emailService.uploadImage(file);
       setSections(
@@ -131,14 +129,14 @@ const EmailBuilder = () => {
       }));
     } catch (error) {
       console.error("Error uploading image:", error);
-    }finally{
-      setLoading({uploadingImage:false});
+    } finally {
+      setLoading({ uploadingImage: false });
     }
   };
 
   const handleSaveTemplate = async () => {
     try {
-      setLoading({loading:true});
+      setLoading({ loading: true });
       const config = {
         title: emailConfig.title,
         content: sections.map((section) => ({
@@ -153,10 +151,8 @@ const EmailBuilder = () => {
       };
 
       if (savedTemplateId) {
-        // Update existing template
         await emailService.updateEmailId(savedTemplateId, config);
       } else {
-        // Create new template
         const response = await emailService.saveEmailConfig(config);
         setSavedTemplateId(response.id);
       }
@@ -166,7 +162,7 @@ const EmailBuilder = () => {
       console.error("Error saving template:", error);
       toast.error("Failed to save template");
     } finally {
-      setLoading({loading:false});
+      setLoading({ loading: false });
     }
   };
 
@@ -179,14 +175,14 @@ const EmailBuilder = () => {
     await handleSaveTemplate();
 
     try {
-      setLoading({loading:true});
+      setLoading({ loading: true });
       await emailService.downloadTemplate(savedTemplateId);
       toast.success("Template downloaded successfully!");
     } catch (error) {
       console.error("Error downloading template:", error);
       toast.error("Failed to download template");
     } finally {
-      setLoading({loading:false});
+      setLoading({ loading: false });
     }
   };
 
@@ -236,7 +232,7 @@ const EmailBuilder = () => {
               styles: {
                 ...section.styles,
                 ...styles,
-                // Ensure font size has 'px' unit
+
                 fontSize: styles.fontSize
                   ? `${styles.fontSize}px`
                   : section.styles.fontSize,
@@ -249,7 +245,6 @@ const EmailBuilder = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Modern Header */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
@@ -265,7 +260,6 @@ const EmailBuilder = () => {
             </div>
           </div>
 
-          {/* Add Title Input */}
           <div className="mt-4">
             <input
               type="text"
@@ -280,16 +274,13 @@ const EmailBuilder = () => {
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="flex flex-col lg:flex-row gap-6">
-          {/* Left Panel - Enhanced Editor */}
           <div
             className={`w-full ${
               showPreview ? "lg:w-1/2" : "lg:w-full"
             } space-y-6`}
           >
-            {/* Section Controls */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold text-gray-900">
@@ -556,7 +547,6 @@ const EmailBuilder = () => {
             </div>
           </div>
 
-          {/* Right Panel - Enhanced Preview */}
           {showPreview && (
             <div className="w-full lg:w-1/2">
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -593,7 +583,6 @@ const EmailBuilder = () => {
           )}
         </div>
 
-        {/* Action Buttons */}
         <div className="fixed bottom-6 right-6 flex space-x-3">
           <button
             onClick={() => setShowPreview(!showPreview)}
@@ -614,14 +603,13 @@ const EmailBuilder = () => {
           <button
             onClick={handleDownloadTemplate}
             className="inline-flex items-center px-4 py-2 bg-green-600 rounded-lg shadow-sm hover:bg-green-700 text-sm font-medium text-white"
-            // disabled={loading || !savedTemplateId}
+            disabled={loading.loading || loading.uploadingImage}
           >
             <Download className="w-4 h-4 mr-2" />
             Download
           </button>
         </div>
 
-        {/* Loading Indicator */}
         {(loading.loading || loading.uploadingImage) && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
             <div className="flex flex-row gap-2 items-center justify-center bg-white p-4 rounded-lg">

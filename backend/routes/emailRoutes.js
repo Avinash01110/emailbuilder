@@ -4,7 +4,6 @@ import emailController from '../controllers/emailController.js';
 
 const router = express.Router();
 
-// Multer configuration for handling file uploads
 const storage = multer.diskStorage({
   destination: 'uploads/',
   filename: (req, file, cb) => {
