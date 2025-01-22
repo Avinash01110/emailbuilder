@@ -19,11 +19,5 @@
       "src": "/(.*)",
       "dest": "server.js"
     }
-  ],
-  "env": {
-    "MONGODB_URI": "mongodb+srv://gavinash321098:u118K9ota7Nrykxd@cluster1.nk456.mongodb.net/?retryWrites=true&w=majority&appName=Cluster1",
-    "CLOUDINARY_CLOUD_NAME": "dkeu9dkjr",
-    "CLOUDINARY_API_KEY": "525113244911878", 
-    "CLOUDINARY_API_SECRET": "foBuj3waCIdvJ9QHyeTHKvkD46I"
-  }
+  ]
 }
